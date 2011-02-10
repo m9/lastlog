@@ -122,7 +122,7 @@ void usage()
 	printf("      --version    output version and exit\n");
 
 	printf("\nWith no FILE, or when FILE is -, read standard input.\n");
-	printf("If neither --text or --binary specified, auto-detect.\n");
+	printf("If neither --text nor --binary specified, auto-detect.\n");
 	exit(EXIT_SUCCESS);
 }
 
