@@ -177,7 +177,9 @@ int text_to_binary(FILE *fp)
 					break;
 				}
 			} while (*++scanner != '\0');
+			//TODO: check to see if token is %s, and then just copy the pointer instead of scanfing it
 			sscanf(inputToken, parseTokens[i], entities[i]);
+			//TODO: don't go past end of string if there aren't 12 entries
 			inputToken = scanner + 1;
 		}
 		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
@@ -185,6 +187,7 @@ int text_to_binary(FILE *fp)
 				       (ip_n[2] << 16) |
 				       (ip_n[1] << 8)  |
 				       (ip_n[0]));
+		//TODO: ipv6 addresses...
 
 		fwrite(&entry, sizeof(struct utmp), 1, stdout);
 	}
