@@ -19,7 +19,7 @@ void detect_filetype(FILE *fp);
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
 #define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
 #else
-#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
+#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n"
 #endif
 #define TEXT_SIZE 422
 
