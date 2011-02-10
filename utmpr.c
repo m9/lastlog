@@ -64,6 +64,8 @@ int main(int argc, char **argv)
 	}
 	else
 		do_file("-");
+
+	return 0;
 }
 
 void do_file(char *filename)
