@@ -19,7 +19,7 @@ int main()
 		#if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
 		char *formatString = "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n";
 		#else
-		char *formatString = "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n"
+		char *formatString = "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
 		#endif
 		printf(formatString, entry.ut_type, entry.ut_pid, entry.ut_line,
 				     entry.ut_id, entry.ut_user, entry.ut_host,
