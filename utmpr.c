@@ -11,10 +11,15 @@ void version(void);
 void usage(void);
 void detect_filetype(FILE *fp);
 
+
+#define Q_(x) #x
+#define Q(x) Q_(x)
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
-#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
+#define UTMP_WRITE_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
+#define UTMP_READ_FORMAT "%hd\t%d\t%"Q(UT_LINESIZE)"[^\t]\t%4[^\t]\t%"Q(UT_NAMESIZE)"[^\t]\t%"Q(UT_HOSTSIZE)"[^\t]\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%16[^\n]\n"
 #else
-#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
+#define UTMP_WRITE_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
+#define UTMP_READ_FORMAT "%hd\t%d\t%"Q(UT_LINESIZE)"[^\t]\t%4[^\t]\t%"Q(UT_NAMESIZE)"[^\t]\t%"Q(UT_HOSTSIZE)"[^\t]\t%hd\t%hd\t%ld\t%ld\t%ld\t%16[^\n]\n";
 #endif
 char *PROGNAME;
 char VERSION_STRING[] = "0.01";
@@ -134,7 +139,7 @@ int binary_to_text(FILE *fp)
 				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x18) & 0xFF);
 
-		printf(UTMP_TEXT_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
+		printf(UTMP_WRITE_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
 					 entry.ut_id, entry.ut_user, entry.ut_host,
 					 entry.ut_exit.e_termination, entry.ut_exit.e_exit,
 					 entry.ut_session, entry.ut_tv.tv_sec,
@@ -150,9 +155,8 @@ int text_to_binary(FILE *fp)
 	unsigned char ip_n[4];
 
 	memset(&entry, 0, sizeof(struct utmp));
-	//TODO: add width fields to %s so that scanf doesn't buffer overflow on read
-	//TODO: reading %s does not work for empty strings, so this errors out
-	while (fscanf(fp, UTMP_TEXT_FORMAT, &entry.ut_type, &entry.ut_pid,
+	//TODO: reading %s does not work for empty strings, so this has an awful time
+	while (fscanf(fp, UTMP_READ_FORMAT, &entry.ut_type, &entry.ut_pid,
 		       entry.ut_line, entry.ut_id, entry.ut_user, entry.ut_host,
 	 	       &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
 	 	       &entry.ut_session, &entry.ut_tv.tv_sec,
