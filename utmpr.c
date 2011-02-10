@@ -13,10 +13,8 @@ void detect_filetype(FILE *fp);
 
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
 #define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
-#define UTMP_TEXT_BUFFER_SIZE 2 * sizeof(struct utmp)
 #else
 #define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
-#define UTMP_TEXT_BUFFER_SIZE 2 * sizeof(struct utmp)
 #endif
 char *PROGNAME;
 char VERSION_STRING[] = "0.01";
@@ -91,21 +89,13 @@ void do_file(char *filename)
 		fclose(fp);
 }
 
-/* this is cheesy, every record should start with a null
- * in binary mode, but no lines should contain nulls in 
- * text mode ... should work */
 void detect_filetype(FILE *fp)
 {
-	char buffer[UTMP_TEXT_BUFFER_SIZE];
-
-	fread(&buffer, UTMP_TEXT_BUFFER_SIZE, 1, fp);
-
-	if (buffer[1] == '\0' && buffer[sizeof(struct utmp) + 1] == '\0')
-		read_binary_mode = 1;
-	else
-		read_binary_mode = 0;
-
-	rewind(fp);
+	// we only read 1 character and then ungetc it because you can't rewind stdin past 1 character
+	int character = fgetc(fp);
+	// every record should start with a null in binary mode
+	read_binary_mode = !character;
+	ungetc(character, fp);
 }
 
 void version()
@@ -155,27 +145,25 @@ int binary_to_text(FILE *fp)
 
 int text_to_binary(FILE *fp)
 {
-	char text_buffer[UTMP_TEXT_BUFFER_SIZE];
 	struct utmp entry;
 	char ip[16];
 	unsigned char ip_n[4];
 
-	while (fgets((void*)&text_buffer, sizeof(text_buffer), fp)) {
-		memset(&entry, 0, sizeof(struct utmp));
-		sscanf(text_buffer, UTMP_TEXT_FORMAT, &entry.ut_type, &entry.ut_pid,
+	memset(&entry, 0, sizeof(struct utmp));
+	//TODO: add width fields to %s so that scanf doesn't buffer overflow on read
+	while (fscanf(fp, UTMP_TEXT_FORMAT, &entry.ut_type, &entry.ut_pid,
 		       entry.ut_line, entry.ut_id, entry.ut_user, entry.ut_host,
 	 	       &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
 	 	       &entry.ut_session, &entry.ut_tv.tv_sec,
-	 	       &entry.ut_tv.tv_usec, ip);
-
-		sscanf(ip, "%hhu.%hhu.%hhu.%hhu",
-			&ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
+	 	       &entry.ut_tv.tv_usec, ip) == 12) {
+		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
 		entry.ut_addr_v6[0] = ((ip_n[3] << 24) |
 				       (ip_n[2] << 16) |
 				       (ip_n[1] << 8)  |
 				       (ip_n[0]));
 
 		fwrite(&entry, sizeof(struct utmp), 1, stdout);
+		memset(&entry, 0, sizeof(struct utmp));
 	}
 	return 0;
 }
