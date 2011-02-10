@@ -163,11 +163,11 @@ int text_to_binary(FILE *fp)
 	
 	char ip[16];
 	struct utmp entry;
-	void* entities[12] = { &entry.ut_type, &entry.ut_pid, &entry.ut_line,
-			       &entry.ut_id, &entry.ut_user, &entry.ut_host,
+	void* entities[12] = { &entry.ut_type, &entry.ut_pid, entry.ut_line,
+			       entry.ut_id, entry.ut_user, entry.ut_host,
 			       &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
 			       &entry.ut_session, &entry.ut_tv.tv_sec,
-			       &entry.ut_tv.tv_usec, &ip };
+			       &entry.ut_tv.tv_usec, ip };
 
 	unsigned char ip_n[4];
 	char line[TEXT_SIZE];
