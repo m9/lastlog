@@ -24,7 +24,7 @@ void detect_filetype(FILE *fp);
 #define TEXT_SIZE 422
 
 char *PROGNAME;
-char VERSION_STRING[] = "0.01";
+char VERSION_STRING[] = "0.1";
 static int read_binary_mode = -1;
 
 int main(int argc, char **argv)
