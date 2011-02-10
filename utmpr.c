@@ -125,7 +125,10 @@ void usage()
 	printf("      --version    output version and exit\n");
 
 	printf("\nWith no FILE, or when FILE is -, read standard input.\n");
-	printf("If neither --text nor --binary specified, auto-detect.\n");
+	printf("If neither --text nor --binary specified, auto-detect.\n\n");
+
+	printf("Your system wtmp is located at: "WTMP_FILENAME"\n");
+	printf("Your system utmp is located at: "UTMP_FILENAME"\n");
 	exit(EXIT_SUCCESS);
 }
 
