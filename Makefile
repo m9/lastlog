@@ -1,4 +1,4 @@
 CFLAGS=-g
-utmpr: utmpr.o
+utmpr:
 clean:
-	rm -f utmpr utmpr.o
+	rm -f utmpr

@@ -12,9 +12,11 @@
 #include <errno.h>
 
 void do_file(char *filename);
-void version(void);
-void usage(void);
 void detect_filetype(FILE *fp);
+void binary_to_text(FILE *fp);
+void text_to_binary(FILE *fp);
+void version();
+void usage();
 
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
 #define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
@@ -23,13 +25,13 @@ void detect_filetype(FILE *fp);
 #endif
 #define TEXT_SIZE 422
 
-char *PROGNAME;
-char VERSION_STRING[] = "0.1";
+#define VERSION "0.1"
+char *program_name;
 static int read_binary_mode = -1;
 
 int main(int argc, char **argv)
 {
-	PROGNAME = argv[0];
+	program_name = argv[0];
 
 	static struct option long_options[] = {
 		{"version",	no_argument,	0,	'v'},
@@ -56,7 +58,7 @@ int main(int argc, char **argv)
 				if (read_binary_mode == -1)
 					read_binary_mode = (c == 'b') ? 1 : 0;
 				else {
-					printf("%s: You may not specify both binary and text mode\n", PROGNAME);
+					printf("%s: You may not specify both binary and text mode\n", program_name);
 					exit(EXIT_FAILURE);
 				}
 				break;
@@ -81,7 +83,7 @@ void do_file(char *filename)
 	else {
 		fp = fopen(filename, "r");
 		if (fp == NULL) {
-			printf("%s: %s: %s\n", PROGNAME, filename, strerror(errno));
+			printf("%s: %s: %s\n", program_name, filename, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -107,32 +109,7 @@ void detect_filetype(FILE *fp)
 	ungetc(character, fp);
 }
 
-void version()
-{
-	printf("utmpr %s\n", VERSION_STRING);
-	exit(EXIT_SUCCESS);
-}
-
-void usage()
-{
-	printf("Usage %s: [OPTION]... [FILE]...\n", PROGNAME);
-	printf("Convert FILE(s), or standard input from/to utmp binary format/text\n");
-	printf("and print to standard output\n\n");
-
-	printf("  -t, --text       read text format and write utmp binary\n");
-	printf("  -b, --binary     read utmp binary and write text\n");
-	printf("      --help       display this help and exit\n");
-	printf("      --version    output version and exit\n");
-
-	printf("\nWith no FILE, or when FILE is -, read standard input.\n");
-	printf("If neither --text nor --binary specified, auto-detect.\n\n");
-
-	printf("Your system wtmp is located at: "WTMP_FILENAME"\n");
-	printf("Your system utmp is located at: "UTMP_FILENAME"\n");
-	exit(EXIT_SUCCESS);
-}
-
-int binary_to_text(FILE *fp)
+void binary_to_text(FILE *fp)
 {
 	struct utmp entry;
 	char ip[16];
@@ -152,10 +129,9 @@ int binary_to_text(FILE *fp)
 					 entry.ut_session, entry.ut_tv.tv_sec,
 					 entry.ut_tv.tv_usec, ip);
 	}
-	return 0;
 }
 
-int text_to_binary(FILE *fp)
+void text_to_binary(FILE *fp)
 {
 	char parser[] = UTMP_TEXT_FORMAT;
 	char *parseTokens[12];
@@ -201,5 +177,29 @@ int text_to_binary(FILE *fp)
 
 		fwrite(&entry, sizeof(struct utmp), 1, stdout);
 	}
-	return 0;
+}
+
+void version()
+{
+	printf("utmpr "VERSION"\n");
+	exit(EXIT_SUCCESS);
+}
+
+void usage()
+{
+	printf("Usage %s: [OPTION]... [FILE]...\n", program_name);
+	printf("Convert FILE(s), or standard input from/to utmp binary format/text\n");
+	printf("and print to standard output\n\n");
+
+	printf("  -t, --text       read text format and write utmp binary\n");
+	printf("  -b, --binary     read utmp binary and write text\n");
+	printf("      --help       display this help and exit\n");
+	printf("      --version    output version and exit\n");
+
+	printf("\nWith no FILE, or when FILE is -, read standard input.\n");
+	printf("If neither --text nor --binary specified, auto-detect.\n\n");
+
+	printf("Your system wtmp is located at: "WTMP_FILENAME"\n");
+	printf("Your system utmp is located at: "UTMP_FILENAME"\n");
+	exit(EXIT_SUCCESS);
 }
