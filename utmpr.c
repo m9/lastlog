@@ -134,11 +134,11 @@ void binary_to_text(FILE *fp)
 void text_to_binary(FILE *fp)
 {
 	char parser[] = UTMP_TEXT_FORMAT;
-	char *parseTokens[12];
-	char *parseToken;
+	char *parse_tokens[12];
+	char *parse_token;
 	int i;
-	for (parseToken = strtok(parser, "\t"), i = 0; parseToken && i < 12; parseToken = strtok(0, "\t"), ++i)
-		parseTokens[i] = parseToken;
+	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(0, "\t"), ++i)
+		parse_tokens[i] = parse_token;
 	
 	char ip[16];
 	struct utmp entry;
@@ -150,13 +150,13 @@ void text_to_binary(FILE *fp)
 
 	unsigned char ip_n[4];
 	char line[TEXT_SIZE];
-	char *inputToken;
+	char *input_token;
 	char *scanner;
 	while (fgets(line, TEXT_SIZE, fp)) {
 		memset(&entry, 0, sizeof(struct utmp));
-		inputToken = line;
+		input_token = line;
 		for (i = 0; i < 12; ++i) {
-			scanner = inputToken;
+			scanner = input_token;
 			do {
 				if (*scanner == '\t') {
 					*scanner = '\0';
@@ -164,9 +164,9 @@ void text_to_binary(FILE *fp)
 				}
 			} while (*++scanner != '\0'); //TODO: unsafe if no null
 			//TODO: check to see if token is %s, and then just copy the pointer instead of scanfing it - unsafe otherwise
-			sscanf(inputToken, parseTokens[i], entities[i]);
+			sscanf(input_token, parse_tokens[i], entities[i]);
 			//TODO: don't go past end of string if there aren't 12 entries - unsafe otherwise
-			inputToken = scanner + 1;
+			input_token = scanner + 1;
 		}
 		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
 		entry.ut_addr_v6[0] = ((ip_n[3] << 24) |
