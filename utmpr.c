@@ -14,6 +14,7 @@ void detect_filetype(FILE *fp);
 
 #define Q_(x) #x
 #define Q(x) Q_(x)
+//TODO: don't we need to do UT_LINESIZE - 1, and likewise for the other specifiers?
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
 #define UTMP_WRITE_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
 #define UTMP_READ_FORMAT "%hd\t%d\t%"Q(UT_LINESIZE)"[^\t]\t%4[^\t]\t%"Q(UT_NAMESIZE)"[^\t]\t%"Q(UT_HOSTSIZE)"[^\t]\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%16[^\n]\n"
