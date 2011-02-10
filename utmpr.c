@@ -11,17 +11,13 @@ void version(void);
 void usage(void);
 void detect_filetype(FILE *fp);
 
-
-#define Q_(x) #x
-#define Q(x) Q_(x)
-//TODO: don't we need to do UT_LINESIZE - 1, and likewise for the other specifiers?
 #if __WORDSIZE == 64 && defined __WORDSIZE_COMPAT32
-#define UTMP_WRITE_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
-#define UTMP_READ_FORMAT "%hd\t%d\t%"Q(UT_LINESIZE)"[^\t]\t%4[^\t]\t%"Q(UT_NAMESIZE)"[^\t]\t%"Q(UT_HOSTSIZE)"[^\t]\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%16[^\n]\n"
+#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%"PRId32"\t%"PRId32"\t%"PRId32"\t%s\n"
 #else
-#define UTMP_WRITE_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
-#define UTMP_READ_FORMAT "%hd\t%d\t%"Q(UT_LINESIZE)"[^\t]\t%4[^\t]\t%"Q(UT_NAMESIZE)"[^\t]\t%"Q(UT_HOSTSIZE)"[^\t]\t%hd\t%hd\t%ld\t%ld\t%ld\t%16[^\n]\n";
+#define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n";
 #endif
+#define TEXT_SIZE 422
+
 char *PROGNAME;
 char VERSION_STRING[] = "0.01";
 static int read_binary_mode = -1;
@@ -38,12 +34,12 @@ int main(int argc, char **argv)
 	};
 	int c;
 	int option_index;
-	while(1) {
+	while (1) {
 		c  = getopt_long(argc, argv, "tbhv", long_options, &option_index);
 		if (c == -1)
 			break;
 
-		switch(c) {
+		switch (c) {
 			case 'h':
 				usage();
 				break;
@@ -140,7 +136,7 @@ int binary_to_text(FILE *fp)
 				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x18) & 0xFF);
 
-		printf(UTMP_WRITE_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
+		printf(UTMP_TEXT_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
 					 entry.ut_id, entry.ut_user, entry.ut_host,
 					 entry.ut_exit.e_termination, entry.ut_exit.e_exit,
 					 entry.ut_session, entry.ut_tv.tv_sec,
@@ -151,17 +147,39 @@ int binary_to_text(FILE *fp)
 
 int text_to_binary(FILE *fp)
 {
-	struct utmp entry;
+	char parser[] = UTMP_TEXT_FORMAT;
+	char *parseTokens[12];
+	char *parseToken;
+	int i;
+	for (parseToken = strtok(parser, "\t"), i = 0; parseToken && i < 12; parseToken = strtok(0, "\t"), ++i)
+		parseTokens[i] = parseToken;
+	
 	char ip[16];
-	unsigned char ip_n[4];
+	struct utmp entry;
+	void* entities[12] = { &entry.ut_type, &entry.ut_pid, &entry.ut_line,
+			   &entry.ut_id, &entry.ut_user, &entry.ut_host,
+			   &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
+			   &entry.ut_session, &entry.ut_tv.tv_sec,
+			   &entry.ut_tv.tv_usec, &ip };
 
-	memset(&entry, 0, sizeof(struct utmp));
-	//TODO: reading %s does not work for empty strings, so this has an awful time
-	while (fscanf(fp, UTMP_READ_FORMAT, &entry.ut_type, &entry.ut_pid,
-		       entry.ut_line, entry.ut_id, entry.ut_user, entry.ut_host,
-	 	       &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
-	 	       &entry.ut_session, &entry.ut_tv.tv_sec,
-	 	       &entry.ut_tv.tv_usec, ip) == 12) {
+	unsigned char ip_n[4];
+	char line[TEXT_SIZE];
+	char *inputToken;
+	char *scanner;
+	while (fgets(line, TEXT_SIZE, fp)) {
+		memset(&entry, 0, sizeof(struct utmp));
+		inputToken = line;
+		for (i = 0; i < 12; ++i) {
+			scanner = inputToken;
+			do {
+				if (*scanner == '\t') {
+					*scanner = '\0';
+					break;
+				}
+			} while (*++scanner != '\0');
+			sscanf(inputToken, parseTokens[i], entities[i]);
+			inputToken = scanner + 1;
+		}
 		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
 		entry.ut_addr_v6[0] = ((ip_n[3] << 24) |
 				       (ip_n[2] << 16) |
@@ -169,7 +187,6 @@ int text_to_binary(FILE *fp)
 				       (ip_n[0]));
 
 		fwrite(&entry, sizeof(struct utmp), 1, stdout);
-		memset(&entry, 0, sizeof(struct utmp));
 	}
 	return 0;
 }
