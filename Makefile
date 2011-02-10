@@ -1,3 +1,3 @@
-testread: testread.o
+utmpr: utmpr.o
 clean:
-	rm -f testread testread.o
+	rm -f utmpr utmpr.o
