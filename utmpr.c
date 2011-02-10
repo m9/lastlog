@@ -151,6 +151,7 @@ int text_to_binary(FILE *fp)
 
 	memset(&entry, 0, sizeof(struct utmp));
 	//TODO: add width fields to %s so that scanf doesn't buffer overflow on read
+	//TODO: reading %s does not work for empty strings, so this errors out
 	while (fscanf(fp, UTMP_TEXT_FORMAT, &entry.ut_type, &entry.ut_pid,
 		       entry.ut_line, entry.ut_id, entry.ut_user, entry.ut_host,
 	 	       &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
