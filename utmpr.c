@@ -93,8 +93,8 @@ void detect_filetype(FILE *fp)
 {
 	// we only read 1 character and then ungetc it because you can't rewind stdin past 1 character
 	int character = fgetc(fp);
-	// every record should start with a null in binary mode
-	read_binary_mode = !character;
+	// every record should start with something less than ascii zero
+	read_binary_mode = character < '0';
 	ungetc(character, fp);
 }
 
