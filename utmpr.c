@@ -198,7 +198,10 @@ void text_to_binary(FILE *fp)
 				       (ip_n[0]));
 		//TODO: ipv6 addresses...
 
-		fwrite(&entry, sizeof(struct utmp), 1, output_file);
+		if (!fwrite(&entry, sizeof(struct utmp), 1, output_file)) {
+			fprintf(stderr, "%s: Could not write output\n", program_name);
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
