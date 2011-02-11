@@ -217,7 +217,7 @@ void usage()
 	printf("and print to standard output\n\n");
 
 	printf("  -t, --text         read text format and write utmp binary\n");
-	printf("  -b, --binary       read utmp binary and write text\n");
+	printf("  -b, --binary       read utmp binary and write text format\n");
 	printf("  -o, --output FILE  write output to FILE instead of standard out\n");
 	printf("      --help         display this help and exit\n");
 	printf("      --version      output version and exit\n");
