@@ -137,8 +137,13 @@ void binary_to_text(FILE *fp)
 				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x18) & 0xFF);
 
+		// ut_id is not null terminated
+		char id[5];
+		memcpy(id, entry.ut_id, 4);
+		id[4] = '\0';
+
 		fprintf(output_file, UTMP_TEXT_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
-					 entry.ut_id, entry.ut_user, entry.ut_host,
+					 id, entry.ut_user, entry.ut_host,
 					 entry.ut_exit.e_termination, entry.ut_exit.e_exit,
 					 entry.ut_session, entry.ut_tv.tv_sec,
 					 entry.ut_tv.tv_usec, ip);
@@ -154,13 +159,13 @@ void text_to_binary(FILE *fp)
 	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(NULL, "\t"), ++i)
 		parse_tokens[i] = parse_token;
 	
-	char ip[16];
 	struct utmp entry;
-	void *entities[] = { &entry.ut_type, &entry.ut_pid, entry.ut_line,
-			     entry.ut_id, entry.ut_user, entry.ut_host,
+	char ip[16];
+	void *entities[] = { &entry.ut_type, &entry.ut_pid, &entry.ut_line,
+			     &entry.ut_id, &entry.ut_user, &entry.ut_host,
 			     &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
 			     &entry.ut_session, &entry.ut_tv.tv_sec,
-			     &entry.ut_tv.tv_usec, ip };
+			     &entry.ut_tv.tv_usec, &ip, (void*)&ip + (sizeof(ip) / sizeof(char))};
 
 	unsigned char ip_n[4];
 	char line[TEXT_SIZE];
@@ -173,14 +178,18 @@ void text_to_binary(FILE *fp)
 			scanner = input_token;
 			do {
 				if (*scanner == '\t') {
-					*scanner = '\0';
+					*scanner++ = '\0';
 					break;
 				}
-			} while (*++scanner != '\0'); //TODO: unsafe if no null
-			//TODO: check to see if token is %s, and then just copy the pointer instead of scanfing it - unsafe otherwise
+			} while (*scanner++ != '\0' && scanner <= line + TEXT_SIZE);
+
+			if (parse_tokens[i][1] == 's' && strlen(input_token) > entities[i + 1] - entities[i]) {
+				fflush(output_file);
+				fprintf(stderr, "%s: invalid input format\n", program_name);
+				exit(EXIT_FAILURE);
+			}
 			sscanf(input_token, parse_tokens[i], entities[i]);
-			//TODO: don't go past end of string if there aren't 12 entries - unsafe otherwise
-			input_token = scanner + 1;
+			input_token = scanner;
 		}
 		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
 		entry.ut_addr_v6[0] = ((ip_n[3] << 24) |
