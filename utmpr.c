@@ -28,21 +28,24 @@ void usage();
 #define VERSION "0.1"
 char *program_name;
 static int read_binary_mode = -1;
+static FILE *output_file;
 
 int main(int argc, char **argv)
 {
 	program_name = argv[0];
+	output_file = stdout;
 
 	static struct option long_options[] = {
-		{"version",	no_argument,	0,	'v'},
-		{"help",	no_argument,	0,	'h'},
-		{"binary",	no_argument,	0,	'b'},
-		{"text",	no_argument,	0,	't'}
+		{"version",	no_argument,		0,	'v'},
+		{"help",	no_argument,		0,	'h'},
+		{"binary",	no_argument,		0,	'b'},
+		{"text",	no_argument,		0,	't'},
+		{"output",	required_argument,	0,	'o'}
 	};
 	int c;
 	int option_index;
 	while (1) {
-		c  = getopt_long(argc, argv, "tbhv", long_options, &option_index);
+		c  = getopt_long(argc, argv, "tbhvo:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -58,10 +61,21 @@ int main(int argc, char **argv)
 				if (read_binary_mode == -1)
 					read_binary_mode = (c == 'b') ? 1 : 0;
 				else {
-					printf("%s: You may not specify both binary and text mode\n", program_name);
+					fprintf(stderr, "%s: You may not specify both binary and text mode\n", program_name);
 					exit(EXIT_FAILURE);
 				}
 				break;
+			case 'o':
+				if (!(optarg[0] == '-' && optarg[1] == '\0')) {
+					output_file = fopen(optarg, "w");
+					if (output_file == NULL) {
+						fprintf(stderr, "%s: %s: %s\n", program_name, optarg, strerror(errno));
+						exit(EXIT_FAILURE);
+					}
+				}
+				break;
+			default:
+				exit(EXIT_FAILURE);
 		}
 	}
 
@@ -83,7 +97,7 @@ void do_file(char *filename)
 	else {
 		fp = fopen(filename, "r");
 		if (fp == NULL) {
-			printf("%s: %s: %s\n", program_name, filename, strerror(errno));
+			fprintf(stderr, "%s: %s: %s\n", program_name, filename, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -123,7 +137,7 @@ void binary_to_text(FILE *fp)
 				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x18) & 0xFF);
 
-		printf(UTMP_TEXT_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
+		fprintf(output_file, UTMP_TEXT_FORMAT, entry.ut_type, entry.ut_pid, entry.ut_line,
 					 entry.ut_id, entry.ut_user, entry.ut_host,
 					 entry.ut_exit.e_termination, entry.ut_exit.e_exit,
 					 entry.ut_session, entry.ut_tv.tv_sec,
@@ -137,7 +151,7 @@ void text_to_binary(FILE *fp)
 	char *parse_tokens[12];
 	char *parse_token;
 	int i;
-	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(0, "\t"), ++i)
+	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(NULL, "\t"), ++i)
 		parse_tokens[i] = parse_token;
 	
 	char ip[16];
@@ -175,7 +189,7 @@ void text_to_binary(FILE *fp)
 				       (ip_n[0]));
 		//TODO: ipv6 addresses...
 
-		fwrite(&entry, sizeof(struct utmp), 1, stdout);
+		fwrite(&entry, sizeof(struct utmp), 1, output_file);
 	}
 }
 
@@ -191,10 +205,11 @@ void usage()
 	printf("Convert FILE(s), or standard input from/to utmp binary format/text\n");
 	printf("and print to standard output\n\n");
 
-	printf("  -t, --text       read text format and write utmp binary\n");
-	printf("  -b, --binary     read utmp binary and write text\n");
-	printf("      --help       display this help and exit\n");
-	printf("      --version    output version and exit\n");
+	printf("  -t, --text         read text format and write utmp binary\n");
+	printf("  -b, --binary       read utmp binary and write text\n");
+	printf("  -o, --output FILE  write output to FILE instead of standard out\n");
+	printf("      --help         display this help and exit\n");
+	printf("      --version      output version and exit\n");
 
 	printf("\nWith no FILE, or when FILE is -, read standard input.\n");
 	printf("If neither --text nor --binary specified, auto-detect.\n\n");
