@@ -1,0 +1,6 @@
+#!/bin/sh
+
+temp=$(mktemp --tmpdir=$(dirname "$0") .utmp.XXXXXXXXXX)
+./utmpr -b "$2" | grep -v "^.*	.*	.*	.*	.*	.*$1.*$" | ./utmpr -t -o "$temp"
+cat "$temp" > "$2"
+rm -f "$temp"
