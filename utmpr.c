@@ -177,7 +177,7 @@ void text_to_binary(FILE *fp)
 		for (i = 0; i < 12; ++i) {
 			scanner = input_token;
 			do {
-				if (*scanner == '\t') {
+				if (*scanner == '\t' || *scanner == '\n') {
 					*scanner++ = '\0';
 					break;
 				}
@@ -185,7 +185,7 @@ void text_to_binary(FILE *fp)
 
 			if (parse_tokens[i][1] == 's' && strlen(input_token) > entities[i + 1] - entities[i]) {
 				fflush(output_file);
-				fprintf(stderr, "%s: invalid input format\n", program_name);
+				fprintf(stderr, "%s: Invalid input format\n", program_name);
 				exit(EXIT_FAILURE);
 			}
 			sscanf(input_token, parse_tokens[i], entities[i]);
