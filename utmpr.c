@@ -205,6 +205,8 @@ void text_to_binary(FILE *fp)
 void version()
 {
 	printf("utmpr "VERSION"\n");
+	printf("Copyright (C) 2011 Jason A. Donenfeld <Jason@zx2c4.com>\n");
+	printf("Copyright (C) 2011 Adam Weiss <Adam@signal11.com>\n");
 	exit(EXIT_SUCCESS);
 }
 
