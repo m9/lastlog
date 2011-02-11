@@ -131,7 +131,7 @@ void binary_to_text(FILE *fp)
 		if (0) //TODO: determine how to figure out of it's an ipv6. entries 1 2 and 3 are zero perhaps?
 			ip[0] = 'a'; //TODO: format ipv6 address
 		else
-			sprintf(ip, "%d.%d.%d.%d",
+			sprintf(ip, "%hhu.%hhu.%hhu.%hhu",
 				(entry.ut_addr_v6[0] >> 0x0) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x8) & 0xFF,
 				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
