@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Jason A. Donenfeld <Jason@zx2c4.com>
+ * Copyright (C) 2011-2012 Jason A. Donenfeld <Jason@zx2c4.com>
  * Copyright (C) 2011 Adam Weiss <Adam@signal11.com>
  */
 
