@@ -154,8 +154,12 @@ void text_to_binary(FILE *fp)
 	char *parse_tokens[12];
 	char *parse_token;
 	int i;
-	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(NULL, "\t"), ++i)
-		parse_tokens[i] = parse_token;
+	for (parse_token = strtok(parser, "\t"), i = 0; parse_token && i < 12; parse_token = strtok(NULL, "\t"), ++i) {
+		if (parse_token[1] == 's')
+			parse_tokens[i] = "%[^\t]";
+		else
+			parse_tokens[i] = parse_token;
+	}
 	
 	struct utmp entry;
 	char ip[64];
