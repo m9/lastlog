@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 void do_file(char *filename);
 void detect_filetype(FILE *fp);
@@ -23,7 +24,7 @@ void usage();
 #else
 #define UTMP_TEXT_FORMAT "%hd\t%d\t%s\t%s\t%s\t%s\t%hd\t%hd\t%ld\t%ld\t%ld\t%s\n"
 #endif
-#define TEXT_SIZE 422
+#define TEXT_SIZE 470
 
 #define VERSION "0.1"
 char *program_name;
@@ -126,17 +127,14 @@ void detect_filetype(FILE *fp)
 void binary_to_text(FILE *fp)
 {
 	struct utmp entry;
-	char ip[16];
+	char ip[64];
 	while (fread(&entry, sizeof(struct utmp), 1, fp)) {
-		if (0) //TODO: determine how to figure out of it's an ipv6. entries 1 2 and 3 are zero perhaps?
-			ip[0] = 'a'; //TODO: format ipv6 address
+		if (entry.ut_addr_v6[1] || entry.ut_addr_v6[2] || entry.ut_addr_v6[3])
+			inet_ntop(AF_INET6, entry.ut_addr_v6, ip, sizeof(ip));
+		else if (entry.ut_addr_v6[0])
+			inet_ntop(AF_INET, entry.ut_addr_v6, ip, sizeof(ip));
 		else
-			sprintf(ip, "%hhu.%hhu.%hhu.%hhu",
-				(entry.ut_addr_v6[0] >> 0x0) & 0xFF,
-				(entry.ut_addr_v6[0] >> 0x8) & 0xFF,
-				(entry.ut_addr_v6[0] >> 0x10) & 0xFF,
-				(entry.ut_addr_v6[0] >> 0x18) & 0xFF);
-
+			strcpy(ip, "-");
 		// ut_id is not null terminated
 		char id[5];
 		memcpy(id, entry.ut_id, 4);
@@ -160,14 +158,13 @@ void text_to_binary(FILE *fp)
 		parse_tokens[i] = parse_token;
 	
 	struct utmp entry;
-	char ip[16];
+	char ip[64];
 	void *entities[] = { &entry.ut_type, &entry.ut_pid, &entry.ut_line,
 			     &entry.ut_id, &entry.ut_user, &entry.ut_host,
 			     &entry.ut_exit.e_termination, &entry.ut_exit.e_exit,
 			     &entry.ut_session, &entry.ut_tv.tv_sec,
 			     &entry.ut_tv.tv_usec, &ip, (void*)&ip + (sizeof(ip) / sizeof(char))};
 
-	unsigned char ip_n[4];
 	char line[TEXT_SIZE];
 	char *input_token;
 	char *scanner;
@@ -191,13 +188,15 @@ void text_to_binary(FILE *fp)
 			sscanf(input_token, parse_tokens[i], entities[i]);
 			input_token = scanner;
 		}
-		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &ip_n[0], &ip_n[1], &ip_n[2], &ip_n[3]);
-		entry.ut_addr_v6[0] = ((ip_n[3] << 24) |
-				       (ip_n[2] << 16) |
-				       (ip_n[1] << 8)  |
-				       (ip_n[0]));
-		//TODO: ipv6 addresses...
-
+		
+		memset(entry.ut_addr_v6, 0, sizeof(entry.ut_addr_v6));
+		if (strcmp(ip, "-")) {
+			if (strchr(ip, ':'))
+				inet_pton(AF_INET6, ip, entry.ut_addr_v6);
+			else
+				inet_pton(AF_INET, ip, entry.ut_addr_v6);
+		}
+		
 		if (!fwrite(&entry, sizeof(struct utmp), 1, output_file)) {
 			fprintf(stderr, "%s: Could not write output\n", program_name);
 			exit(EXIT_FAILURE);
